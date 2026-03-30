@@ -1,5 +1,13 @@
 #!/bin/bash
 
+CPU=false
+MEMORY=false
+DISK=false
+CPUTOP=false
+MEMORYTOP=false
+PROC=""
+
+
 while [[ "$#" -gt 0 ]]; do
 	case "$1" in
 	--help|-h)
@@ -7,23 +15,23 @@ while [[ "$#" -gt 0 ]]; do
 		exit 0
 		;;
 	--cpu|-c)
-		#TODO add total CPU usage
+		CPU=true
 		shift
 		;;
 	--memory|-m)
-		#TODO add total Memory usage
+		MEMORY=true
 		shift
 		;;
 	--disk|-d)
-		#TODO add total Disk usage
+		DISK=true
 		shift
 		;;
 	--cpu-top|-C)
-		#TODO add top 5 processes by CPU usage
+		CPUTOP=true
 		shift
 		;;
 	--memory-top|-M)
-		#TODO add top 5 processes by memory usage
+		
 		shift
 		;;
 	-*)
@@ -31,8 +39,22 @@ while [[ "$#" -gt 0 ]]; do
 		exit 1
 		;;
 	*)
-		#TODO Implement operand
+		PROC="$1"
 		shift
 		;;
 	esac
 done
+
+if [[ "$CPU" == true  ]]; then
+	FirstTotal=$(head -n 1 /proc/stat | awk '{ for (i=2;i<=11;i++) total+=$i } END { print total}')
+	FirstIdle=$(head -n 1 /proc/stat | awk '{ print $5 }')
+	sleep 0.5
+	SecondTotal=$(head -n 1 /proc/stat | awk '{ for (i=2;i<=11;i++) total+=$i } END { print total}')
+	SecondIdle=$(head -n 1 /proc/stat | awk '{ print $5 }')
+	DeltaTotal="$((SecondTotal-$FirstTotal))"
+	DeltaIdle="$((SecondIdle-$FirstIdle))"
+	CpuUsage="$((100*($DeltaTotal - $DeltaIdle)/$DeltaTotal))"
+	echo $CpuUsage
+	exit 0
+fi
+exit 0
