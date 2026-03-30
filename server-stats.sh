@@ -59,18 +59,18 @@ if [[ "$CPU" == true  ]]; then
 fi
 
 if [[ "$MEMORY" == true ]]; then
-	#Get memory totals and filter them
+	#Get memory totals and filter to divide memory and swap amounts
 	totals=$(free | awk '{ print $2 }')
 	mem_total=$(echo "$totals" | tail -n 2 | head -n 1)
 	swap_total=$(echo "$totals" | tail -n 1)
-	#Get memory usages and filter them
+	#Get memory usages and filter them to get memory and swap used
 	totals_used=$(free | awk '{ print $3 }')
 	mem_used=$(echo "$totals_used" | tail -n 2 | head -n 1)
 	swap_used=$(echo "$totals_used" | tail -n 1)
 	#Get the percents of each type of memory used
 	mem_used_percent="$((100*mem_used/mem_total))"
 	swap_used_percent="$((100*swap_used/swap_total))"
-	#Get the free memories doing the difference between the total memories and the memories used amount
+	#Get the free memories amounts and percents
 	mem_free="$((mem_total-mem_used))"
 	swap_free="$((swap_total-swap_used))"
 	mem_free_percent="$((100-mem_used_percent))"
@@ -78,6 +78,21 @@ if [[ "$MEMORY" == true ]]; then
 	printf "%-15s %-10s %-16s %-16s\n" "TYPE" "TOTAL" "USED" "FREE"
 	printf "%-15s %-10d %-16s %-16s\n" "Memory" "$mem_total" "$mem_used ($mem_used_percent%)" "$mem_free ($mem_free_percent%)" 
 	printf "%-15s %-10d %-16s %-16s\n" "Swap" "$swap_total" "$swap_used ($swap_used_percent%)" "$swap_free ($swap_free_percent%)"
+	exit 0
+fi
+
+if [[ "$DISK" == true ]]; then
+	#Get the information of usage of the main disk. Particulary of the root partition"
+	disk_info=$(df -h / | tail -n 1)
+	#Filter the information to get the total, used and free space amounts and percents
+	disk_total=$(echo $disk_info | awk '{ print $2 }')
+	disk_used=$(echo $disk_info | awk '{ print $3 }')
+	disk_free=$(echo $disk_info | awk '{ print $4 }')
+	disk_used_percent=$(echo $disk_info | awk '{ print $5 }' | tr -d '%')
+	disk_free_percent="$((100-disk_used_percent))"
+	#Show them on the console and exit
+	printf "%-8s %-12s %-12s\n" "TOTAL" "USED" "AVAILABLE"
+	printf "%-8s %-12s %-12s\n" "$disk_total" "$disk_used ($disk_used_percent%)" "$disk_free ($disk_free_percent%)"
 	exit 0
 fi
 exit 0
