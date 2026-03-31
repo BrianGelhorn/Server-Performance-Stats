@@ -31,7 +31,7 @@ while [[ "$#" -gt 0 ]]; do
 		shift
 		;;
 	--memory-top|-M)
-		
+		MEMTOP=true	
 		shift
 		;;
 	-*)
@@ -96,9 +96,11 @@ if [[ "$DISK" == true ]]; then
 	exit 0
 fi
 if [[ "$CPUTOP" == true ]]; then
-	top_processes=$(ps -eo %cpu,comm --sort=-%cpu | grep -vw -e "ps" -e "$(basename $0)" | tail -n +2 | head -n 5)
-	top_processes_name=$(echo "$top_processes" | awk '{ print $2 }')
-	top_processes_usage=$(echo "$top_processes" | awk '{ print $1 }')
+	#Get all processes using CPU, Sort them by CPU usage and delete the script usage and the ps usage to prevent false readings. Then take the first 5 elements
+	top_processes=$(ps -eo comm,%cpu --sort=-%cpu | grep -vw -e "ps" -e "$(basename $0)" | tail -n +2 | head -n 5)
+	#Separate name and usage
+	top_processes_name=$(echo "$top_processes" | awk '{ print $1 }')
+	top_processes_usage=$(echo "$top_processes" | awk '{ print $2 }')
 	printf "%-15s %5s\n" "PROCESS" "USAGE"
 	for ((i=1; i<6; i++)); do
 		process_name=$(echo "$top_processes_name" | awk -v i="$i" 'NR==i')
@@ -106,5 +108,20 @@ if [[ "$CPUTOP" == true ]]; then
 		printf "%-15s %5s\n" "$process_name" "$process_usage%"
 	done
 	exit 0
+fi
+
+if [[ "$MEMTOP" == true ]]; then
+	top_processes=$(ps -eo comm,%mem --sort=-%mem | grep -vw -e "ps" -e "$(basename $0)" | tail -n +2 | head -n 5)
+	#Separate name and usage
+	top_processes_name=$(echo "$top_processes" | awk '{ print $1 }')
+	top_processes_usage=$(echo "$top_processes" | awk '{ print $2 }')
+	printf "%-15s %5s\n" "PROCESS" "USAGE"
+	for ((i=1; i<6; i++)); do
+		process_name=$(echo "$top_processes_name" | awk -v i="$i" 'NR==i')
+		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
+		printf "%-15s %5s\n" "$process_name" "$process_usage%"
+	done
+	exit 0
+
 fi
 exit 0
