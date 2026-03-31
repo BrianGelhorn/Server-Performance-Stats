@@ -95,4 +95,16 @@ if [[ "$DISK" == true ]]; then
 	printf "%-8s %-12s %-12s\n" "$disk_total" "$disk_used ($disk_used_percent%)" "$disk_free ($disk_free_percent%)"
 	exit 0
 fi
+if [[ "$CPUTOP" == true ]]; then
+	top_processes=$(ps -eo %cpu,comm --sort=-%cpu | grep -vw -e "ps" -e "$(basename $0)" | tail -n +2 | head -n 5)
+	top_processes_name=$(echo "$top_processes" | awk '{ print $2 }')
+	top_processes_usage=$(echo "$top_processes" | awk '{ print $1 }')
+	printf "%-15s %5s\n" "PROCESS" "USAGE"
+	for ((i=1; i<6; i++)); do
+		process_name=$(echo "$top_processes_name" | awk -v i="$i" 'NR==i')
+		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
+		printf "%-15s %5s\n" "$process_name" "$process_usage%"
+	done
+	exit 0
+fi
 exit 0
