@@ -5,13 +5,49 @@ MEMORY=false
 DISK=false
 CPUTOP=false
 MEMORYTOP=false
-PROC=""
 
+show_help() {
+cat << 'EOF'
+server-stats.sh - Display basic system statistics
 
+USAGE:
+  ./server-stats.sh [OPTIONS]
+
+DESCRIPTION:
+  This script displays basic server/system statistics, including
+  CPU usage, memory usage, disk usage, and the top 5 processes
+  by CPU and memory consumption.
+
+OPTIONS:
+  -h, --help
+      Show this help message and exit.
+
+  -c, --cpu
+      Show total CPU usage.
+
+  -m, --memory
+      Show RAM and swap usage.
+
+  -d, --disk
+      Show main disk (/) usage.
+
+  -C, --cpu-top
+      Show the top 5 processes by CPU usage.
+
+  -M, --memory-top
+      Show the top 5 processes by memory usage.
+  
+NOTE: If no arguments are passed, the script will show all the options by default
+EOF
+}
+NO_ARGS=false
+if [[ "$#" -eq 0 ]]; then
+	NO_ARGS=true
+fi
 while [[ "$#" -gt 0 ]]; do
 	case "$1" in
 	--help|-h)
-		#TODO add help
+		show_help
 		exit 0
 		;;
 	--cpu|-c)
@@ -39,11 +75,20 @@ while [[ "$#" -gt 0 ]]; do
 		exit 1
 		;;
 	*)
-		PROC="$1"
+		echo "Unexpected argument: $1" >&2
+		exit 1
 		shift
 		;;
 	esac
 done
+
+if [[ NO_ARGS == true ]]; then
+	CPU=true
+	MEMORY=true
+	DISK=true
+	CPUTOP=true
+	MEMTOP=true
+fi
 
 if [[ "$CPU" == true  ]]; then
 	FirstTotal=$(head -n 1 /proc/stat | awk '{ for (i=2;i<=11;i++) total+=$i } END { print total}')
@@ -55,7 +100,6 @@ if [[ "$CPU" == true  ]]; then
 	DeltaIdle="$((SecondIdle-FirstIdle))"
 	CpuUsage="$((100*($DeltaTotal - $DeltaIdle)/$DeltaTotal))"
 	echo $CpuUsage
-	exit 0
 fi
 
 if [[ "$MEMORY" == true ]]; then
@@ -78,7 +122,6 @@ if [[ "$MEMORY" == true ]]; then
 	printf "%-15s %-10s %-16s %-16s\n" "TYPE" "TOTAL" "USED" "FREE"
 	printf "%-15s %-10d %-16s %-16s\n" "Memory" "$mem_total" "$mem_used ($mem_used_percent%)" "$mem_free ($mem_free_percent%)" 
 	printf "%-15s %-10d %-16s %-16s\n" "Swap" "$swap_total" "$swap_used ($swap_used_percent%)" "$swap_free ($swap_free_percent%)"
-	exit 0
 fi
 
 if [[ "$DISK" == true ]]; then
@@ -93,7 +136,6 @@ if [[ "$DISK" == true ]]; then
 	#Show them on the console and exit
 	printf "%-8s %-12s %-12s\n" "TOTAL" "USED" "AVAILABLE"
 	printf "%-8s %-12s %-12s\n" "$disk_total" "$disk_used ($disk_used_percent%)" "$disk_free ($disk_free_percent%)"
-	exit 0
 fi
 if [[ "$CPUTOP" == true ]]; then
 	#Get all processes using CPU, Sort them by CPU usage and delete the script usage and the ps usage to prevent false readings. Then take the first 5 elements
@@ -101,13 +143,12 @@ if [[ "$CPUTOP" == true ]]; then
 	#Separate name and usage
 	top_processes_name=$(echo "$top_processes" | awk '{ print $1 }')
 	top_processes_usage=$(echo "$top_processes" | awk '{ print $2 }')
-	printf "%-15s %5s\n" "PROCESS" "USAGE"
+	printf "%-15s %5s\n" "PROCESS" "CPU"
 	for ((i=1; i<6; i++)); do
 		process_name=$(echo "$top_processes_name" | awk -v i="$i" 'NR==i')
 		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
 		printf "%-15s %5s\n" "$process_name" "$process_usage%"
 	done
-	exit 0
 fi
 
 if [[ "$MEMTOP" == true ]]; then
@@ -115,13 +156,11 @@ if [[ "$MEMTOP" == true ]]; then
 	#Separate name and usage
 	top_processes_name=$(echo "$top_processes" | awk '{ print $1 }')
 	top_processes_usage=$(echo "$top_processes" | awk '{ print $2 }')
-	printf "%-15s %5s\n" "PROCESS" "USAGE"
+	printf "%-15s %5s\n" "PROCESS" "MEMORY"
 	for ((i=1; i<6; i++)); do
 		process_name=$(echo "$top_processes_name" | awk -v i="$i" 'NR==i')
 		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
 		printf "%-15s %5s\n" "$process_name" "$process_usage%"
 	done
-	exit 0
-
 fi
 exit 0
