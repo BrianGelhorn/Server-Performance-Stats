@@ -26,6 +26,12 @@ The script can display:
   - `tail`
   - `tr`
 
+## Setup
+
+Give executing permissions to the bash script  
+
+`chmod +x ./server-stats.sh`
+
 ## Usage
 ```bash
 ./server-stats.sh [OPTIONS]
