@@ -82,7 +82,7 @@ while [[ "$#" -gt 0 ]]; do
 	esac
 done
 
-if [[ NO_ARGS == true ]]; then
+if [[ "$NO_ARGS" == true ]]; then
 	CPU=true
 	MEMORY=true
 	DISK=true
@@ -99,7 +99,8 @@ if [[ "$CPU" == true  ]]; then
 	DeltaTotal="$((SecondTotal-FirstTotal))"
 	DeltaIdle="$((SecondIdle-FirstIdle))"
 	CpuUsage="$((100*($DeltaTotal - $DeltaIdle)/$DeltaTotal))"
-	echo $CpuUsage
+        #Double newline to leave space for better readability	
+	printf "CPU usage is: %s \n\n" "$CpuUsage%"	 
 fi
 
 if [[ "$MEMORY" == true ]]; then
@@ -120,8 +121,9 @@ if [[ "$MEMORY" == true ]]; then
 	mem_free_percent="$((100-mem_used_percent))"
 	swap_free_percent="$((100-swap_used_percent))"
 	printf "%-15s %-10s %-16s %-16s\n" "TYPE" "TOTAL" "USED" "FREE"
-	printf "%-15s %-10d %-16s %-16s\n" "Memory" "$mem_total" "$mem_used ($mem_used_percent%)" "$mem_free ($mem_free_percent%)" 
-	printf "%-15s %-10d %-16s %-16s\n" "Swap" "$swap_total" "$swap_used ($swap_used_percent%)" "$swap_free ($swap_free_percent%)"
+	printf "%-15s %-10d %-16s %-16s\n" "Memory" "$mem_total" "$mem_used ($mem_used_percent%)" "$mem_free ($mem_free_percent%)"
+        #Double newline to leave space for better readability	
+	printf "%-15s %-10d %-16s %-16s\n\n" "Swap" "$swap_total" "$swap_used ($swap_used_percent%)" "$swap_free ($swap_free_percent%)"
 fi
 
 if [[ "$DISK" == true ]]; then
@@ -135,7 +137,8 @@ if [[ "$DISK" == true ]]; then
 	disk_free_percent="$((100-disk_used_percent))"
 	#Show them on the console and exit
 	printf "%-8s %-12s %-12s\n" "TOTAL" "USED" "AVAILABLE"
-	printf "%-8s %-12s %-12s\n" "$disk_total" "$disk_used ($disk_used_percent%)" "$disk_free ($disk_free_percent%)"
+        #Double newline to leave space for better readability	
+	printf "%-8s %-12s %-12s\n\n" "$disk_total" "$disk_used ($disk_used_percent%)" "$disk_free ($disk_free_percent%)"
 fi
 if [[ "$CPUTOP" == true ]]; then
 	#Get all processes using CPU, Sort them by CPU usage and delete the script usage and the ps usage to prevent false readings. Then take the first 5 elements
@@ -149,6 +152,8 @@ if [[ "$CPUTOP" == true ]]; then
 		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
 		printf "%-15s %5s\n" "$process_name" "$process_usage%"
 	done
+        #Newline to leave space for better readability
+	echo	
 fi
 
 if [[ "$MEMTOP" == true ]]; then
@@ -162,5 +167,7 @@ if [[ "$MEMTOP" == true ]]; then
 		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
 		printf "%-15s %5s\n" "$process_name" "$process_usage%"
 	done
+        #Newline to leave space for better readability	
+	echo
 fi
 exit 0
