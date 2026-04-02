@@ -5,6 +5,7 @@ MEMORY=false
 DISK=false
 CPUTOP=false
 MEMORYTOP=false
+PERCORE=false
 
 show_help() {
 cat << 'EOF'
@@ -37,13 +38,14 @@ OPTIONS:
   -M, --memory-top
       Show the top 5 processes by memory usage.
   
-NOTE: If no arguments are passed, the script will show all the options by default
+  --per-core
+	Show the usage of process of 1 core instead of all cores usage
+	
+
+NOTE: If no arguments are passed, the script will show all the options by default showing the CPU general usage
 EOF
 }
-NO_ARGS=false
-if [[ "$#" -eq 0 ]]; then
-	NO_ARGS=true
-fi
+NO_ARGS=true
 while [[ "$#" -gt 0 ]]; do
 	case "$1" in
 	--help|-h)
@@ -52,22 +54,31 @@ while [[ "$#" -gt 0 ]]; do
 		;;
 	--cpu|-c)
 		CPU=true
+		NO_ARGS=false
+		shift
+		;;
+	--per-core)
+		PERCORE=true
 		shift
 		;;
 	--memory|-m)
 		MEMORY=true
+		NO_ARGS=false
 		shift
 		;;
 	--disk|-d)
 		DISK=true
+		NO_ARGS=false
 		shift
 		;;
 	--cpu-top|-C)
 		CPUTOP=true
+		NO_ARGS=false
 		shift
 		;;
 	--memory-top|-M)
 		MEMTOP=true	
+		NO_ARGS=false
 		shift
 		;;
 	-*)
@@ -99,8 +110,11 @@ if [[ "$CPU" == true  ]]; then
 	DeltaTotal="$((SecondTotal-FirstTotal))"
 	DeltaIdle="$((SecondIdle-FirstIdle))"
 	CpuUsage="$((100*($DeltaTotal - $DeltaIdle)/$DeltaTotal))"
+	if [[ "$PERCORE" == true ]]; then
+		CpuUsage="$(($CpuUsage/cat /proc/cpuinfo | grep -m 1 "siblings" | awk '{ print $3 }'))"
+	fi
         #Double newline to leave space for better readability	
-	printf "CPU usage is: %s \n\n" "$CpuUsage%"	 
+	printf "CPU usage is: %s%% \n\n" "$CpuUsage"	 
 fi
 
 if [[ "$MEMORY" == true ]]; then
@@ -140,6 +154,8 @@ if [[ "$DISK" == true ]]; then
         #Double newline to leave space for better readability	
 	printf "%-8s %-12s %-12s\n\n" "$disk_total" "$disk_used ($disk_used_percent%)" "$disk_free ($disk_free_percent%)"
 fi
+
+CORES=$(grep -m 1 "siblings" /proc/cpuinfo | awk '{ print $3 }')
 if [[ "$CPUTOP" == true ]]; then
 	#Get all processes using CPU, Sort them by CPU usage and delete the script usage and the ps usage to prevent false readings. Then take the first 5 elements
 	top_processes=$(ps -eo comm,%cpu --sort=-%cpu | grep -vw -e "ps" -e "$(basename $0)" | tail -n +2 | head -n 5)
@@ -149,7 +165,11 @@ if [[ "$CPUTOP" == true ]]; then
 	printf "%-15s %5s\n" "PROCESS" "CPU"
 	for ((i=1; i<6; i++)); do
 		process_name=$(echo "$top_processes_name" | awk -v i="$i" 'NR==i')
-		process_usage=$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')
+		process_usage="$(echo "$top_processes_usage" | awk -v i="$i" 'NR==i')"
+		process_usage=$(awk -v usage="$process_usage" -v cores="$CORES" 'BEGIN { printf "%.2f", usage / cores }')
+		if [[ "$PERCORE" == true ]]; then
+			process_usage="$((process_usage*cores))"
+		fi
 		printf "%-15s %5s\n" "$process_name" "$process_usage%"
 	done
         #Newline to leave space for better readability
